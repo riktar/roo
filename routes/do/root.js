@@ -1,19 +1,14 @@
-'use strict'
+import {executeStep} from "../../utils/flow.js";
 
-const {orderBy} = require("lodash");
-const {executeStep} = require("../../utils/flow");
-
-module.exports = async function (fastify, opts) {
+export default async function (fastify, opts) {
   fastify.post('/filters/:key', async function (request, reply) {
     const {key} = request.params
+    const db = await fastify.db();
     let {args} = request.body;
-    let hook = {}
-    try {
-      hook = await fastify.db.getData(`/filters/${key}`);
-    } catch (error) {
-      return {}
-    }
-    const orderedStep = orderBy(hook.chain, ['priority'], ['asc'])
+    let hook = db.chain.get(`filters.${key}`, null).value();
+    if (!hook) return {}
+    const orderedStep = db.chain.get(`filters.${key}.chain`).orderBy(['priority'], ['asc']).value();
+
     let lastOutput = {}
     for (const step of orderedStep) {
       try {
@@ -30,14 +25,11 @@ module.exports = async function (fastify, opts) {
 
   fastify.post('/aggregate/:key', async function (request, reply) {
     const {key} = request.params
-    const {args} = request.body;
-    let hook
-    try {
-      hook = await fastify.db.getData(`/aggregate/${key}`);
-    } catch (error) {
-      return []
-    }
-    const orderedStep = orderBy(hook.chain, ['priority'], ['asc'])
+    const db = await fastify.db();
+    let {args} = request.body;
+    let hook = db.chain.get(`aggregate.${key}`, null).value();
+    if (!hook) return {}
+    const orderedStep = db.chain.get(`aggregate.${key}.chain`).orderBy(['priority'], ['asc']).value();
     let output = []
     for (const step of orderedStep) {
       try {
@@ -55,14 +47,11 @@ module.exports = async function (fastify, opts) {
 
   fastify.post('/actions/:key', async function (request, reply) {
     const {key} = request.params
-    const {args} = request.body;
-    let hook
-    try {
-      hook = await fastify.db.getData(`/actions/${key}`);
-    } catch (error) {
-      return {success: false};
-    }
-    const orderedStep = orderBy(hook.chain, ['priority'], ['asc'])
+    const db = await fastify.db();
+    let {args} = request.body;
+    let hook = db.chain.get(`actions.${key}`, null).value();
+    if (!hook) return {}
+    const orderedStep = db.chain.get(`actions.${key}.chain`).orderBy(['priority'], ['asc']).value();
     for (const step of orderedStep) {
       try {
         await executeStep(step, args, fastify)

@@ -1,9 +1,10 @@
 // const {JsonPlaceholderReplacer} = require("json-placeholder-replacer");
-const {isEmpty} = require("lodash");
-const {request} = require("undici");
+import _ from "lodash";
+import {request} from "undici";
 
+const {isEmpty} = _;
 
-const executeStep = async (step, args, fastify) => {
+export const executeStep = async (step, args, fastify) => {
   const {request: requestInfo} = step;
   const {protocol} = requestInfo;
   if (protocol === 'http') {
@@ -11,7 +12,7 @@ const executeStep = async (step, args, fastify) => {
   }
 }
 
-const httpStep = async (requestInfo, args, fastify) => {
+export const httpStep = async (requestInfo, args, fastify) => {
   const {endpoint, method, headers} = requestInfo;
   const opts = {method}
   const body = args.length > 0 ? {args: [args[args.length - 1]]} : {args: []};
@@ -26,5 +27,3 @@ const httpStep = async (requestInfo, args, fastify) => {
   const res = await request(endpoint, opts);
   return res.body.json();
 }
-
-module.exports = {executeStep, httpStep};

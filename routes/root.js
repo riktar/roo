@@ -1,74 +1,89 @@
-'use strict'
+import _ from "lodash";
 
-const {isEmpty} = require("lodash");
-module.exports = async function (fastify, opts) {
+const {isEmpty, set} = _;
+export default async function (fastify, opts) {
 
   fastify.get('/:type', async function (request, reply) {
+    const {type} = request.params;
     try {
-      const data = await fastify.db.getData(`/${request.params.type}`);
-      return data
+      const db = await fastify.db();
+      return db.data[type]
     } catch (error) {
       return {}
     }
   })
 
   fastify.post('/:type', async function (request, reply) {
+    const db = await fastify.db();
     const {type} = request.params
     const {key, step = {}, blockOnException = false} = request.body;
-    try {
-      await fastify.db.getData(`/${type}/${key}`);
+    if (db.chain.get(`${type}.${key}`).value()) {
       return fastify.httpErrors.badRequest('hook already registered');
-    } catch (error) {
-      await fastify.db.push(`/${type}/${key}`, { blockOnException, chain: [], }, true);
+    } else {
+      set(db.data, `${type}.${key}`, {chain: [], blockOnException})
+      await db.write()
     }
     if(!isEmpty(step)) {
-      const index = await fastify.db.getIndex(`/${type}/${key}/chain`, step.id);
+      const index = db.chain.get(`${type}.${key}.chain`).findIndex(['id', step.id]).value();
       if (index > -1) return fastify.httpErrors.badRequest('This id already exists in chain')
-      await fastify.db.push(`/${type}/${key}/chain[]`, step);
+      db.data[type][key].chain.push(step)
+      await db.write()
     }
-    return fastify.db.getData(`/${type}/${key}`);
+    return db.chain.get(`${type}.${key}`).value()
   })
 
   fastify.post('/:type/:key/step', async function (request, reply) {
     const {type, key} = request.params;
+    const db = await fastify.db();
     const step = request.body || {};
-    try {
-      await fastify.db.getData(`/${type}/${key}`);
-    } catch (error) {
+    if(!db.chain.get(`${type}.${key}`, null).value()) {
       return fastify.httpErrors.badRequest('hook not registered');
     }
-    const index = await fastify.db.getIndex(`/${type}/${key}/chain`, step.id);
+    const index = db.chain.get(`${type}.${key}.chain`).findIndex(['id', step.id]).value();
     if (index > -1) return fastify.httpErrors.badRequest('This id already exists in chain')
-    await fastify.db.push(`/${type}/${key}/chain[]`, step);
-    return fastify.db.getData(`/${type}/${key}`);
+    db.data[type][key].chain.push(step)
+    await db.write()
+    return db.chain.get(`${type}.${key}`).value()
   })
 
   fastify.delete('/:type/:key', async function (request, reply) {
     const {type, key} = request.params;
-    return fastify.db.delete(`/${type}/${key}`);
+    const db = await fastify.db();
+    if(db.chain.get(`${type}.${key}`, null).value()) {
+      delete db.data[type][key]
+      await db.write()
+    }
+    return db.data[type]
   })
 
   fastify.get('/:type/:key/step/:id', async function (request, reply) {
     const {type, key, id} = request.params;
-    const index = await fastify.db.getIndex(`/${type}/${key}/chain`, id);
+    const db = await fastify.db();
+    const index = db.chain.get(`${type}.${key}.chain`).findIndex(['id', id]).value();
     if (index > -1) {
-      return fastify.db.getData(`/${type}/${key}/chain[${index}]`);
+      return db.chain.get(`${type}.${key}.chain[${index}]`);
     } else return fastify.httpErrors.badRequest('This id does not exist in chain')
   })
 
   fastify.delete('/:type/:key/step/:id', async function (request, reply) {
     const {type, key, id} = request.params;
-    const index = await fastify.db.getIndex(`/${type}/${key}/chain`, id);
+    const db = await fastify.db();
+    const index = db.chain.get(`${type}.${key}.chain`).findIndex(['id', id]).value();
     if (index > -1) {
-      return fastify.db.delete(`/${type}/${key}/chain[${index}]`);
+      db.data[type][key].chain.splice(index, 1)
+      await db.write()
+      return
     } else return fastify.httpErrors.badRequest('This id does not exist in chain')
   })
 
   fastify.put('/:type/:key/step/:id', async function (request, reply) {
     const {type, key, id} = request.params;
-    const index = await fastify.db.getIndex(`/${type}/${key}/chain`, id);
+    const db = await fastify.db();
+    const index = db.chain.get(`${type}.${key}.chain`).findIndex(['id', id]).value();
     if (index > -1) {
-      return fastify.db.push(`/${type}/${key}/chain[${index}]`, request.body, true);
+      set(db.data, `${type}.${key}.chain[${index}]`, request.body)
+      await db.write()
+      return db.chain.get(`${type}.${key}.chain[${index}]`).value()
     } else return fastify.httpErrors.badRequest('This id does not exist in chain')
   })
 }

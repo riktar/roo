@@ -1,83 +1,19 @@
 {
-  "filters": {
-    "my-hook": {
-      "blockOnException": false,
-      "chain": [
-        {
-          "priority": 10,
-          "id": "addNumber1",
-          "request": {
-            "protocol": "http",
-            "endpoint": "http://localhost:3002/test",
-            "method": "POST",
-            "headers": {}
-          }
-        },
-        {
-          "priority": 10,
-          "id": "addNumber10",
-          "request": {
-            "protocol": "http",
-            "endpoint": "http://localhost:3003/test",
-            "method": "POST",
-            "headers": {}
-          }
-        }
-      ]
-    }
-  },
-  "actions": {
-    "my-action": {
-      "blockOnException": false,
-      "chain": [
-        {
-          "priority": 10,
-          "id": "addNumber1",
-          "request": {
-            "protocol": "http",
-            "endpoint": "http://localhost:3002/test",
-            "method": "POST",
-            "headers": {}
-          }
-        },
-        {
-          "priority": 10,
-          "id": "addNumber10",
-          "request": {
-            "protocol": "http",
-            "endpoint": "http://localhost:3003/test",
-            "method": "POST",
-            "headers": {}
-          }
-        }
-      ]
-    }
-  },
   "aggregate": {
-    "my-aggregate": {
-      "blockOnException": false,
+    "create-organization": {
       "chain": [
         {
           "priority": 10,
-          "id": "addNumber1",
+          "id": "hab2",
           "request": {
             "protocol": "http",
-            "endpoint": "http://localhost:3002/test",
-            "method": "POST",
-            "headers": {}
-          }
-        },
-        {
-          "priority": 10,
-          "id": "addNumber10",
-          "request": {
-            "protocol": "http",
-            "endpoint": "http://localhost:3003/test",
-            "method": "POST",
+            "endpoint": "https://dummyjson.com/products/1",
+            "method": "GET",
             "headers": {}
           }
         }
-      ]
+      ],
+      "blockOnException": false
     }
   }
 }

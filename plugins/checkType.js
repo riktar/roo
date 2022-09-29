@@ -1,9 +1,6 @@
-'use strict'
+import fp from 'fastify-plugin'
 
-const fp = require('fastify-plugin')
-
-
-module.exports = fp(async function (fastify, opts) {
+export default fp(async function (fastify, opts) {
   const validType = ['filters', 'aggregate', 'actions']
 
   fastify.addHook('preHandler', (request, reply, done) => {
